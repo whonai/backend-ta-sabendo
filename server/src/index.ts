@@ -9,6 +9,7 @@ import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
 import debugRouter from './routes/debug';
 import { connectDb } from './db';
+import { startInstagramCollectorScheduler } from './services/instagram/instagramScheduler';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 connectDb()
   .then(() => {
+    startInstagramCollectorScheduler();
     app.listen(PORT, () => {
       // eslint-disable-next-line no-console
       console.log(`Tá Rolando Feira backend running on port ${PORT}`);

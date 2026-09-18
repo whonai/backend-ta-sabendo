@@ -37,3 +37,7 @@ prisma/*.db-journal
 .temp/
 .tmp/
 *.pid
+
+# Instagram pipeline (sessão + mídia baixada)
+server/data/
+server/python/.venv/

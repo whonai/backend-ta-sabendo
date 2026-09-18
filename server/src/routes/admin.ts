@@ -5,6 +5,7 @@ import UserModel from '../models/user';
 import { bearerUserId } from './auth';
 import { toAppEvent } from '../mappers';
 import { AppEvent, ModerationFlag } from '../types';
+import adminInstagramRouter from './adminInstagram';
 
 const router = Router();
 
@@ -25,6 +26,8 @@ async function requireAdmin(req: Parameters<typeof bearerUserId>[0], res: { stat
 router.use((req, res, next) => {
   void requireAdmin(req, res, next);
 });
+
+router.use(adminInstagramRouter);
 
 router.get('/pending-events', async (_req, res) => {
   const rows = await EventModel.find({ status: 'unconfirmed' }).lean();

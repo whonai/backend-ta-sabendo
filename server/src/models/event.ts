@@ -50,6 +50,15 @@ EventSchema.add({
   createdBy: CreatedBySchema,
   createdAt: String,
   updatedAt: String,
+  source: String,
+  extractionConfidence: Number,
+  extractedText: String,
+  sourceInstagramUsername: String,
+  sourceMediaId: String,
+  detectedAt: String,
+  artist: String,
+  incompleteFields: [String],
+  possibleDuplicateOf: String,
 });
 
 const EventModel = mongoose.model('Event', EventSchema);

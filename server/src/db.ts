@@ -1,3 +1,4 @@
+import path from 'path';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import EventModel from './models/event';
@@ -19,6 +20,7 @@ import { closeStaleNonCuratedPastEvents, syncCuratedCatalog } from './services/c
 import { realignAllEventEngagement } from './services/eventEngagement';
 
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const MONGODB_URI =
   process.env.MONGODB_URI ||
@@ -52,7 +54,7 @@ async function seedUsersIfEmpty(): Promise<void> {
 
   await UserModel.create({
     id: 'user_current',
-    email: 'naiara.gomes@grupoboticario.com.br',
+    email: 'naiaragms2018@gmail.com',
     passwordHash: hashPassword('admin123'),
     name: 'Naiara Gomes',
     avatarUrl:
@@ -80,11 +82,14 @@ async function seedUsersIfEmpty(): Promise<void> {
 export async function connectDb() {
   await mongoose.connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || 'ta_rolando' });
 
-  if (process.env.SEED_FORCE === 'true' || (await needsReseed())) {
+  if (process.env.SEED_FORCE === 'true') {
     await reseedAll();
+  } else if (process.env.SEED_ON_EMPTY === 'true' && (await needsReseed())) {
+    const empty = !(await EventModel.findOne().lean());
+    if (empty) await reseedAll();
   }
 
-  if (process.env.SYNC_CURATED_ON_BOOT !== 'false') {
+  if (process.env.SYNC_CURATED_ON_BOOT === 'true') {
     await syncCuratedCatalog(new Date());
     await closeStaleNonCuratedPastEvents(new Date());
   } else {

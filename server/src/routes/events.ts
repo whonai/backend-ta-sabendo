@@ -12,6 +12,7 @@ import {
   syncEventEngagementToDocument,
   toggleParticipation,
 } from '../services/eventEngagement';
+import { isPublicEventStatus, PUBLIC_EVENT_STATUS_FILTER } from '../utils/publicEvents';
 
 const router = Router();
 
@@ -59,13 +60,18 @@ router.get('/', async (req, res) => {
   if (date) filter.date = date;
   if (neighborhood) filter.neighborhood = neighborhood;
 
-  const rows = await EventModel.find(filter).lean();
+  const rows = await EventModel.find({ ...filter, ...PUBLIC_EVENT_STATUS_FILTER }).lean();
   const userId = getRequestUserId(req);
   res.json(await mapEventList(rows as Record<string, unknown>[], userId));
 });
 
 router.get('/:id', async (req, res) => {
   const userId = getRequestUserId(req);
+  const raw = await EventModel.findOne({ id: req.params.id }).lean();
+  const row = raw as Record<string, unknown> | null;
+  if (!row || !isPublicEventStatus(String(row.status || ''))) {
+    return res.status(404).json({ message: 'Evento não encontrado' });
+  }
   const ev = await findEventMapped(req.params.id, userId);
   if (!ev) return res.status(404).json({ message: 'Evento não encontrado' });
   res.json(ev);

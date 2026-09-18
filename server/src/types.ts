@@ -21,7 +21,10 @@ export type EventStatus =
   | 'confirmed'
   | 'high_confidence'
   | 'disputed'
-  | 'closed';
+  | 'closed'
+  | 'pending'
+  | 'published'
+  | 'rejected';
 
 export type EventOrigin = 'platform' | 'user' | 'verified_venue';
 
@@ -67,6 +70,36 @@ export type AppEvent = {
     reputationLevel: ReputationLevel;
     trustworthinessScore: number;
   };
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Campos extras para revisão admin (pipeline Instagram). */
+export type AdminInstagramEventFields = {
+  source?: 'instagram';
+  extractionConfidence?: number;
+  extractedText?: string;
+  sourceInstagramUsername?: string;
+  sourceMediaId?: string;
+  detectedAt?: string;
+  artist?: string | null;
+  incompleteFields?: string[];
+  possibleDuplicateOf?: string;
+};
+
+export type AdminPendingEvent = AppEvent & AdminInstagramEventFields;
+
+export type MonitoredInstagramProfile = {
+  id: string;
+  username: string;
+  instagramUrl?: string;
+  venueId: string;
+  active: boolean;
+  lastCheckedAt?: string;
+  lastSuccessfulCheckAt?: string;
+  lastError?: string;
+  lastErrorStage?: string;
+  lastErrorAt?: string;
   createdAt: string;
   updatedAt: string;
 };

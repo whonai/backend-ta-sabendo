@@ -2,6 +2,7 @@ import { Router } from 'express';
 import VenueModel from '../models/venue';
 import EventModel from '../models/event';
 import { toAppEvent, toVenue } from '../mappers';
+import { PUBLIC_EVENT_STATUS_FILTER } from '../utils/publicEvents';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
 
   const [venueDocs, eventDocs] = await Promise.all([
     VenueModel.find().lean(),
-    EventModel.find().lean(),
+    EventModel.find(PUBLIC_EVENT_STATUS_FILTER).lean(),
   ]);
 
   const events = eventDocs.map(e => toAppEvent(e as Record<string, unknown>));

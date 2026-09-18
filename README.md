@@ -43,7 +43,7 @@ Health: `GET http://localhost:3001/api/health` → `{ "ok": true }`
 
 | E-mail | Senha | Papel |
 |--------|-------|--------|
-| `naiara.gomes@grupoboticario.com.br` | `admin123` | admin |
+| `naiaragms2018@gmail.com` | `admin123` | admin |
 | `demo@tarolando.app` | `demo123` | user |
 
 Token JWT (mock estável HMAC) → header `Authorization: Bearer <token>` (mesma key do front: `tarolando_auth_token`).

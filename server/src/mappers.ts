@@ -1,4 +1,5 @@
 import {
+  AdminPendingEvent,
   AppEvent,
   EventCategory,
   EventOrigin,
@@ -47,6 +48,7 @@ const LEGACY_EVENT_CATEGORY: Record<string, EventCategory> = {
 
 const EVENT_STATUSES = new Set<string>([
   'unconfirmed', 'confirmed', 'high_confidence', 'disputed', 'closed',
+  'pending', 'published', 'rejected',
 ]);
 
 const LEGACY_EVENT_STATUS: Record<string, EventStatus> = {
@@ -160,6 +162,22 @@ export function toAppEvent(raw: Record<string, unknown>): AppEvent {
     createdBy,
     createdAt: String(raw.createdAt || new Date().toISOString()),
     updatedAt: String(raw.updatedAt || new Date().toISOString()),
+  };
+}
+
+export function toAdminPendingEvent(raw: Record<string, unknown>): AdminPendingEvent {
+  const base = toAppEvent(raw);
+  return {
+    ...base,
+    source: raw.source as AdminPendingEvent['source'],
+    extractionConfidence: raw.extractionConfidence as number | undefined,
+    extractedText: raw.extractedText as string | undefined,
+    sourceInstagramUsername: raw.sourceInstagramUsername as string | undefined,
+    sourceMediaId: raw.sourceMediaId as string | undefined,
+    detectedAt: raw.detectedAt as string | undefined,
+    artist: (raw.artist as string | null | undefined) ?? undefined,
+    incompleteFields: raw.incompleteFields as string[] | undefined,
+    possibleDuplicateOf: raw.possibleDuplicateOf as string | undefined,
   };
 }
 
