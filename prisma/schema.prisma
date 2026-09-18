@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum EventCategory {
+  shows
+  bares
+  festas
+  dj
+  futebol
+  espontaneo
+}
+
+enum EventOrigin {
+  platform
+  user
+  owner
+}
+
+enum EventStatus {
+  scheduled
+  happening_now
+  high_confidence
+  closed
+}
+
+enum ReportType {
+  pothole
+  lighting
+  flooding
+  trash
+  traffic_light
+  sidewalk
+  traffic
+  construction
+  other
+}
+
+enum ReportStatus {
+  active
+  resolved
+  investigating
+  closed
+}
+
+enum StreetStatus {
+  clear
+  moderate
+  intense
+  flooded
+  work_in_progress
+}
+
+model User {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String   @unique
+  password              String
+  name                  String
+  role                  Role     @default(USER)
+  neighborhood          String   @default("Centro")
+  badges                String[] @default(["Morador de Feira"]) 
+  trustworthinessScore  Int      @default(50)
+  confirmationsGiven    Int      @default(0)
+  reportsSubmitted      Int      @default(0)
+  events                Event[]  @relation("UserEvents")
+  urbanReports          UrbanReport[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Event {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String
+  category    EventCategory
+  venueName   String
+  address     String
+  neighborhood String
+  latitude    Float
+  longitude   Float
+  startTime   String
+  endTime     String?
+  dayLabel    String
+  price       String
+  photoUrl    String?
+  isVerified  Boolean       @default(true)
+  origin      EventOrigin   @default(platform)
+  status      EventStatus
+  goingCount  Int           @default(0)
+  createdById String
+  createdBy   User          @relation(fields: [createdById], references: [id], name: "UserEvents")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model UrbanReport {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type          ReportType
+  title         String
+  description   String
+  streetName    String
+  neighborhood  String
+  latitude      Float
+  longitude     Float
+  photoUrl      String?
+  status        ReportStatus @default(active)
+  upvotesCount  Int          @default(1)
+  flagsCount    Int          @default(0)
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model StreetSegment {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  neighborhood String
+  status      StreetStatus
+  reportCount Int         @default(0)
+  coordinates Json
+  updatedAt   DateTime    @updatedAt
+}
+
+model Venue {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  neighborhood String
+  address    String
+  category   String
+  latitude   Float
+  longitude  Float
+  photoUrl   String?
+  isVerified Boolean  @default(true)
+}

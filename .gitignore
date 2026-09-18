@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Build
+dist/
+server/dist/
+build/
+*.tsbuildinfo
+
+# Environment & secrets (never commit)
+.env
+.env.*
+!.env.example
+!server/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Misc
+.temp/
+.tmp/
+*.pid
