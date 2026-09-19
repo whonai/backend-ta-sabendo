@@ -13,6 +13,7 @@ import { UrbanReport, UrbanReportSchema } from '../mongo/schemas/urban-report.sc
     ])
   ],
   controllers: [CityController],
-  providers: [CityService]
+  providers: [CityService],
+  exports: [CityService]
 })
 export class CityModule {}

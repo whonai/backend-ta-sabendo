@@ -20,6 +20,7 @@
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/swagger": "^6.0.0",
     "@prisma/client": "^5.0.0",
+    "@nestjs/config": "^2.0.0",
     "@nestjs/mongoose": "^9.0.0",
     "mongoose": "^7.6.0",
     "uuid": "^9.0.0",
