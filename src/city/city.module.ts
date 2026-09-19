@@ -1,10 +1,18 @@
 import { Module } from '@nestjs/common'
 import { CityController } from './city.controller'
 import { CityService } from './city.service'
-import { PrismaService } from '../prisma/prisma.service'
+import { MongooseModule } from '@nestjs/mongoose'
+import { Event, EventSchema } from '../mongo/schemas/event.schema'
+import { UrbanReport, UrbanReportSchema } from '../mongo/schemas/urban-report.schema'
 
 @Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Event.name, schema: EventSchema },
+      { name: UrbanReport.name, schema: UrbanReportSchema }
+    ])
+  ],
   controllers: [CityController],
-  providers: [CityService, PrismaService]
+  providers: [CityService]
 })
 export class CityModule {}

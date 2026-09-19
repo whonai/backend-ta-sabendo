@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { VenueDocument } from '../mongo/schemas/venue.schema'
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (v: number) => (v * Math.PI) / 180
@@ -15,11 +17,11 @@ function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number)
 
 @Injectable()
 export class VenuesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@InjectModel('Venue') private venueModel: Model<VenueDocument>) {}
 
   async findNearby(lat?: number, lng?: number, radiusM = 1000) {
-    const rows = await this.prisma.venue.findMany()
-    const mapped = rows.map((v) => ({
+    const rows = await this.venueModel.find().lean()
+    const mapped = rows.map((v: any) => ({
       id: v.id,
       name: v.name,
       category: v.category,
