@@ -24,11 +24,11 @@ export class UrbanReportsService {
     if (!r) throw new NotFoundException('Report not found')
     const flags = r.flagsCount + 1
     // If flags exceed threshold, set status to investigating
-    const status = flags >= 5 ? 'investigating' : r.status
+    const status = (flags >= 5 ? 'investigating' : r.status) as any
     return this.prisma.urbanReport.update({ where: { id }, data: { flagsCount: flags, status } })
   }
 
-  async setStatus(id: string, status: string) {
+  async setStatus(id: string, status: any) {
     return this.prisma.urbanReport.update({ where: { id }, data: { status } })
   }
 }
