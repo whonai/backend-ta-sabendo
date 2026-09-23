@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common'
 import { PulseAliasController } from './pulse.controller'
-import { CityService } from '../city/city.service'
-import { PrismaService } from '../prisma/prisma.service'
+import { CityModule } from '../city/city.module'
 
 @Module({
-  controllers: [PulseAliasController],
-  providers: [CityService, PrismaService],
+  imports: [CityModule],
+  controllers: [PulseAliasController]
 })
 export class PulseModule {}

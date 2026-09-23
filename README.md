@@ -110,4 +110,29 @@ npx prisma generate
 npm run start:dev
 ```
 
+### Rodando tudo localmente (Postgres + Mongo + serviços)
+
+Se você quer rodar tanto o `server` (Express/Mongo) quanto o backend Nest (Prisma/Postgres) em um só comando, use o helper incluído.
+
+Requisitos: `docker`, `docker-compose`, `node`, `npm`.
+
+```bash
+# subir Postgres e Mongo
+docker-compose up -d
+
+# tornar o script executável (uma vez)
+chmod +x ./scripts/run-local.sh
+
+# gerar client Prisma, aplicar migrations e iniciar os dois serviços
+./scripts/run-local.sh
+```
+
+O script definirá `DATABASE_URL` apontando para o Postgres local e `MONGODB_URI` para o Mongo local. Ele inicia o `server` em `3001` e o Nest (por padrão `3000` ou `3002` conforme `.env`).
+
+Para parar tudo:
+
+```bash
+docker-compose down
+```
+
 Swagger (Nest): http://localhost:3000/api/docs — **não** substitui o Express na porta 3001 para o front atual.

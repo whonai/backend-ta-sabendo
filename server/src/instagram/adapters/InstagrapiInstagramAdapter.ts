@@ -1,7 +1,13 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { InstagramAdapter, InstagramPostItem, InstagramProfileInfo, InstagramStoryItem } from '../types';
+import {
+  InstagramAdapter,
+  InstagramPostItem,
+  InstagramProfileInfo,
+  InstagramSearchUserItem,
+  InstagramStoryItem,
+} from '../types';
 
 type CliResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -115,5 +121,9 @@ export class InstagrapiInstagramAdapter implements InstagramAdapter {
 
   async getPosts(username: string, limit = 12): Promise<InstagramPostItem[]> {
     return runPython<InstagramPostItem[]>({ action: 'get_posts', username, limit });
+  }
+
+  async searchUsers(query: string, limit = 5): Promise<InstagramSearchUserItem[]> {
+    return runPython<InstagramSearchUserItem[]>({ action: 'search_users', query, limit });
   }
 }

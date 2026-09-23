@@ -121,6 +121,22 @@ def post_items(cl, username: str, limit: int) -> List[Dict[str, Any]]:
     return out
 
 
+def search_users(cl, query: str, limit: int) -> List[Dict[str, Any]]:
+    log_step(f"Buscando usuários IG: {query[:40]}…")
+    users = cl.search_users(query)[: min(max(limit, 1), 10)]
+    out: List[Dict[str, Any]] = []
+    for u in users:
+        out.append(
+            {
+                "username": u.username,
+                "fullName": u.full_name or "",
+                "profilePicUrl": str(u.profile_pic_url or ""),
+            }
+        )
+    log_step(f"{len(out)} resultado(s)")
+    return out
+
+
 def profile_info(cl, username: str) -> Dict[str, Any]:
     u = cl.user_info_by_username(username)
     return {
@@ -140,12 +156,19 @@ def main() -> None:
         respond_err("invalid JSON on stdin")
 
     action = req.get("action")
-    username = (req.get("username") or "").strip().lstrip("@")
-    if not username:
-        respond_err("username is required")
 
     try:
         cl = client()
+        if action == "search_users":
+            query = (req.get("query") or "").strip()
+            if not query:
+                respond_err("query is required")
+            limit = int(req.get("limit") or 5)
+            respond_ok(search_users(cl, query, limit))
+            return
+        username = (req.get("username") or "").strip().lstrip("@")
+        if not username:
+            respond_err("username is required")
         if action == "get_profile":
             respond_ok(profile_info(cl, username))
         elif action == "get_stories":

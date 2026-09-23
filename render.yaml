@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: ta-rolando-backend-nest
+    env: node
+    plan: free
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: node dist/main.js
+    repo: .
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: ta-rolando-postgres
+      - key: MONGODB_URI
+        value: $MONGODB_URI
+
+  - type: web
+    name: ta-rolando-server-express
+    env: node
+    plan: free
+    buildCommand: cd server && npm ci && npm run build
+    startCommand: cd server && npm start
+    repo: .
+    envVars:
+      - key: MONGODB_URI
+        value: $MONGODB_URI
+
+databases:
+  - name: ta-rolando-postgres
+    engine: postgres
+    version: "15"

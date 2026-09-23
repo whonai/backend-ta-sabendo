@@ -43,10 +43,18 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
+  if (!password || !stored || stored === 'undefined') return false;
   const [salt, hash] = stored.split(':');
   if (!salt || !hash) return false;
-  const attempt = crypto.scryptSync(password, salt, 64).toString('hex');
-  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(attempt, 'hex'));
+  try {
+    const attempt = crypto.scryptSync(password, salt, 64).toString('hex');
+    const hashBuf = Buffer.from(hash, 'hex');
+    const attemptBuf = Buffer.from(attempt, 'hex');
+    if (hashBuf.length !== attemptBuf.length) return false;
+    return crypto.timingSafeEqual(hashBuf, attemptBuf);
+  } catch {
+    return false;
+  }
 }
 
 export function toAuthUser(doc: {

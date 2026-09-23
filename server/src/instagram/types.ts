@@ -31,10 +31,17 @@ export type InstagramPostItem = {
   permalink?: string;
 };
 
+export type InstagramSearchUserItem = {
+  username: string;
+  fullName?: string;
+  profilePicUrl?: string;
+};
+
 export interface InstagramAdapter {
   getProfile(username: string): Promise<InstagramProfileInfo>;
   getStories(username: string): Promise<InstagramStoryItem[]>;
   getPosts(username: string, limit?: number): Promise<InstagramPostItem[]>;
+  searchUsers(query: string, limit?: number): Promise<InstagramSearchUserItem[]>;
 }
 
 export type StoryProcessingStatus =
@@ -58,6 +65,8 @@ export type ExtractedEventDraft = {
   price: number | null;
   venue: string | null;
   artist: string | null;
+  /** Nomes extraídos do OCR (show, com, listas). */
+  artists?: string[];
   category: string | null;
   source: 'instagram';
   sourceUrl: string | null;

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { StreetSegmentDocument } from '../mongo/schemas/street-segment.schema'
 
 @Injectable()
 export class StreetsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@InjectModel('StreetSegment') private ssModel: Model<StreetSegmentDocument>) {}
 
   async getMainAvenues() {
     const names = ['Av. Getúlio Vargas', 'Av. Fraga Maia', 'Av. Maria Quitéria', 'Av. João Durval Carneiro', 'Av. Nóide Cerqueira']
-    return this.prisma.streetSegment.findMany({ where: { name: { in: names } } })
+    return this.ssModel.find({ name: { $in: names } }).lean()
   }
 }

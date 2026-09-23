@@ -1,15 +1,26 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { EventDocument } from '../mongo/schemas/event.schema'
+import { UrbanReportDocument } from '../mongo/schemas/urban-report.schema'
 
 @Injectable()
 export class CityService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel('Event') private eventModel: Model<EventDocument>,
+    @InjectModel('UrbanReport') private urModel: Model<UrbanReportDocument>
+  ) {}
 
   async pulse() {
-    const events = await this.prisma.event.findMany({ orderBy: { goingCount: 'desc' }, take: 5 })
-    const reports = await this.prisma.urbanReport.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 5 })
-    const activePeopleCount = events.reduce((s, e) => s + e.goingCount, 0) + reports.length
-    const busiestNeighborhoods = await this.prisma.event.groupBy({ by: ['neighborhood'], _sum: { goingCount: true }, orderBy: { _sum: { goingCount: 'desc' } }, take: 5 })
+    const events = await this.eventModel.find().sort({ goingCount: -1 }).limit(5).lean()
+    const reports = await this.urModel.find({ status: 'active' }).sort({ createdAt: -1 }).limit(5).lean()
+    const activePeopleCount = events.reduce((s, e) => s + (e.goingCount || 0), 0) + reports.length
+
+    const busiestNeighborhoods = await this.eventModel.aggregate([
+      { $group: { _id: '$neighborhood', totalGoing: { $sum: '$goingCount' } } },
+      { $sort: { totalGoing: -1 } },
+      { $limit: 5 }
+    ])
 
     return {
       activePeopleCount,

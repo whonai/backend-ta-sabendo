@@ -1,34 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { UrbanReportDocument } from '../mongo/schemas/urban-report.schema'
 
 @Injectable()
 export class UrbanReportsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@InjectModel('UrbanReport') private urModel: Model<UrbanReportDocument>) {}
 
   findAll() {
-    return this.prisma.urbanReport.findMany({ where: { status: 'active' } })
+    return this.urModel.find({ status: 'active' }).lean()
   }
 
   create(data: any) {
-    return this.prisma.urbanReport.create({ data })
+    return this.urModel.create(data)
   }
 
   async confirm(id: string) {
-    const r = await this.prisma.urbanReport.findUnique({ where: { id } })
+    const r = await this.urModel.findById(id)
     if (!r) throw new NotFoundException('Report not found')
-    return this.prisma.urbanReport.update({ where: { id }, data: { upvotesCount: r.upvotesCount + 1 } })
+    r.upvotesCount = (r.upvotesCount || 0) + 1
+    await r.save()
+    return r.toJSON()
   }
 
   async flag(id: string) {
-    const r = await this.prisma.urbanReport.findUnique({ where: { id } })
+    const r = await this.urModel.findById(id)
     if (!r) throw new NotFoundException('Report not found')
-    const flags = r.flagsCount + 1
-    // If flags exceed threshold, set status to investigating
-    const status = (flags >= 5 ? 'investigating' : r.status) as any
-    return this.prisma.urbanReport.update({ where: { id }, data: { flagsCount: flags, status } })
+    const flags = (r.flagsCount || 0) + 1
+    const status = flags >= 5 ? 'investigating' : r.status
+    r.flagsCount = flags
+    r.status = status
+    await r.save()
+    return r.toJSON()
   }
 
   async setStatus(id: string, status: any) {
-    return this.prisma.urbanReport.update({ where: { id }, data: { status } })
+    const r = await this.urModel.findByIdAndUpdate(id, { status }, { new: true }).lean()
+    return r
   }
 }

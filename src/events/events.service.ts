@@ -1,39 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { EventDocument } from '../mongo/schemas/event.schema'
 
 @Injectable()
 export class EventsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@InjectModel('Event') private eventModel: Model<EventDocument>) {}
 
   findAll(filters: any = {}) {
     const where: any = {}
     if (filters.category) where.category = filters.category
     if (filters.neighborhood) where.neighborhood = filters.neighborhood
     if (filters.dayLabel) where.dayLabel = filters.dayLabel
-    return this.prisma.event.findMany({ where })
+    return this.eventModel.find(where).lean()
   }
 
   async findOne(id: string) {
-    const event = await this.prisma.event.findUnique({ where: { id } })
+    const event = await this.eventModel.findById(id).lean()
     if (!event) throw new NotFoundException('Event not found')
     return event
   }
 
   create(data: any) {
-    return this.prisma.event.create({ data })
+    return this.eventModel.create(data)
   }
 
   update(id: string, data: any) {
-    return this.prisma.event.update({ where: { id }, data })
+    return this.eventModel.findByIdAndUpdate(id, data, { new: true }).lean()
   }
 
   remove(id: string) {
-    return this.prisma.event.delete({ where: { id } })
+    return this.eventModel.findByIdAndDelete(id).lean()
   }
 
   async rsvp(id: string, userId: string) {
-    const event = await this.findOne(id)
-    const going = event.goingCount + 1
-    return this.prisma.event.update({ where: { id }, data: { goingCount: going } })
+    const event = await this.eventModel.findById(id)
+    if (!event) throw new NotFoundException('Event not found')
+    event.goingCount = (event.goingCount || 0) + 1
+    await event.save()
+    return event.toJSON()
   }
 }

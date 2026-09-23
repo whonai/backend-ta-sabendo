@@ -80,7 +80,10 @@ async function seedUsersIfEmpty(): Promise<void> {
 }
 
 export async function connectDb() {
-  await mongoose.connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || 'ta_rolando' });
+  await mongoose.connect(MONGODB_URI, {
+    dbName: process.env.MONGODB_DB || 'ta_rolando',
+    serverSelectionTimeoutMS: 10_000,
+  });
 
   if (process.env.SEED_FORCE === 'true') {
     await reseedAll();

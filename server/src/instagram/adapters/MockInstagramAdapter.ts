@@ -1,4 +1,10 @@
-import { InstagramAdapter, InstagramPostItem, InstagramProfileInfo, InstagramStoryItem } from '../types';
+import {
+  InstagramAdapter,
+  InstagramPostItem,
+  InstagramProfileInfo,
+  InstagramSearchUserItem,
+  InstagramStoryItem,
+} from '../types';
 
 /** Adapter de desenvolvimento — não chama Instagram. */
 export class MockInstagramAdapter implements InstagramAdapter {
@@ -20,6 +26,10 @@ export class MockInstagramAdapter implements InstagramAdapter {
   }
 
   async getPosts(_username: string, _limit?: number): Promise<InstagramPostItem[]> {
+    return [];
+  }
+
+  async searchUsers(_query: string, _limit = 5): Promise<InstagramSearchUserItem[]> {
     return [];
   }
 }
