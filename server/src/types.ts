@@ -142,6 +142,7 @@ export type UrbanIssueType =
   | 'traffic_light'
   | 'sidewalk'
   | 'traffic'
+  | 'traffic_enforcement'
   | 'construction'
   | 'other';
 

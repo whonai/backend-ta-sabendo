@@ -6,6 +6,7 @@ import {
   osmElementToVenue,
   OsmElement,
 } from '../../osm/mapOsmToVenue';
+import { isOsmDiscoveryPriority } from '../../osm/osmVenuePriority';
 
 export type OsmBbox = { south: number; west: number; north: number; east: number };
 
@@ -49,6 +50,7 @@ export type OsmImportResult = {
   elementsReceived: number;
   upserted: number;
   skipped: number;
+  skippedDeprioritized: number;
   withInstagram: number;
   totalVenues: number;
 };
@@ -65,22 +67,32 @@ export async function importOsmVenues(
 
   let upserted = 0;
   let skipped = 0;
+  let skippedDeprioritized = 0;
   let withInstagram = 0;
 
   for (let i = 0; i < elements.length; i += batchSize) {
     const chunk = elements.slice(i, i + batchSize);
     for (const el of chunk) {
+      if (!isOsmDiscoveryPriority(el)) {
+        skippedDeprioritized += 1;
+        continue;
+      }
       const venue = osmElementToVenue(el);
       if (!venue) {
         skipped += 1;
         continue;
       }
-      const ig = instagramUsernameFromOsmTags(el.tags || {});
+      const tags = el.tags || {};
+      const ig = instagramUsernameFromOsmTags(tags);
       const doc: Record<string, unknown> = {
         ...venue,
         source: 'osm',
         osmType: el.type,
         osmId: el.id,
+        osmAmenity: tags.amenity || tags.leisure || '',
+        osmBrand: tags.brand || '',
+        osmBar: tags.bar === 'yes',
+        discoveryEligible: true,
       };
       if (ig) {
         doc.instagramUsername = ig;
@@ -101,6 +113,7 @@ export async function importOsmVenues(
     elementsReceived: elements.length,
     upserted,
     skipped,
+    skippedDeprioritized,
     withInstagram,
     totalVenues,
   };

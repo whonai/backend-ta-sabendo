@@ -124,8 +124,9 @@ export function osmElementToVenue(el: OsmElement): Venue | null {
 }
 
 export function buildOverpassQuery(south: number, west: number, north: number, east: number): string {
+  /** Sem fast_food / cafe / food_court — fila IG prioriza bar e evento. */
   const amenityFilter =
-    'bar|pub|biergarten|nightclub|restaurant|cafe|fast_food|food_court|theatre|cinema|arts_centre|community_centre|events_venue|music_venue';
+    'bar|pub|biergarten|nightclub|restaurant|theatre|cinema|arts_centre|community_centre|events_venue|music_venue';
   return `
 [out:json][timeout:180];
 (
