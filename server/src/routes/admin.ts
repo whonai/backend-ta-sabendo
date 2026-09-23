@@ -1,32 +1,17 @@
 import { Router } from 'express';
 import EventModel from '../models/event';
 import ModerationFlagModel from '../models/moderationFlag';
-import UserModel from '../models/user';
-import { bearerUserId } from './auth';
 import { toAppEvent } from '../mappers';
 import { AppEvent, ModerationFlag } from '../types';
 import adminInstagramRouter from './adminInstagram';
+import adminVenuesRouter from './adminVenues';
+import { requireAdmin } from '../middleware/requireAdmin';
 
 const router = Router();
 
-async function requireAdmin(req: Parameters<typeof bearerUserId>[0], res: { status: (n: number) => { json: (b: unknown) => void } }, next: () => void) {
-  const userId = bearerUserId(req);
-  if (!userId) {
-    res.status(401).json({ message: 'Não autorizado' });
-    return;
-  }
-  const user = await UserModel.findOne({ id: userId }).lean();
-  if (!user?.isAdmin) {
-    res.status(403).json({ message: 'Acesso restrito a administradores' });
-    return;
-  }
-  next();
-}
+router.use(requireAdmin);
 
-router.use((req, res, next) => {
-  void requireAdmin(req, res, next);
-});
-
+router.use(adminVenuesRouter);
 router.use(adminInstagramRouter);
 
 router.get('/pending-events', async (_req, res) => {

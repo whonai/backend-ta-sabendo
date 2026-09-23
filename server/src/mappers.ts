@@ -1,5 +1,6 @@
 import {
   AdminPendingEvent,
+  AdminPendingEventListItem,
   AppEvent,
   EventCategory,
   EventOrigin,
@@ -165,6 +166,55 @@ export function toAppEvent(raw: Record<string, unknown>): AppEvent {
   };
 }
 
+export function toAdminPendingEventListItem(
+  raw: Record<string, unknown>
+): AdminPendingEventListItem {
+  const coords = raw.coordinates as { lat: number; lng: number } | undefined;
+  const schedule = ensureEventScheduleFields({
+    date: coerceEventDateYmd(raw.date, formatYmdInBahia()),
+    dayLabel: raw.dayLabel as string | undefined,
+    startTime: (raw.startTime as string | undefined) || '',
+    endTime: raw.endTime as string | undefined,
+  });
+
+  let category = (raw.category as AdminPendingEventListItem['category']) || 'espontaneo';
+  if (!EVENT_CATEGORIES.has(category)) {
+    category = LEGACY_EVENT_CATEGORY[category] || 'espontaneo';
+  }
+
+  const imageUrl = String(raw.imageUrl || '').trim();
+
+  return {
+    id: String(raw.id || ''),
+    status: 'pending',
+    title: String(raw.title || 'Sem título'),
+    description: String(raw.description || ''),
+    category,
+    venueId: raw.venueId as string | undefined,
+    venueName: String(raw.venueName || ''),
+    address: String(raw.address || ''),
+    neighborhood: String(raw.neighborhood || 'Centro'),
+    coordinates: coords?.lat != null
+      ? { lat: coords.lat, lng: coords.lng ?? 0 }
+      : { lat: -12.2575, lng: -38.9668 },
+    date: schedule.date,
+    dayLabel: schedule.dayLabel,
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+    price: String(raw.price ?? ''),
+    imageUrl,
+    externalLink: raw.externalLink as string | undefined,
+    artist: (raw.artist as string | undefined) || undefined,
+    artists: raw.artists as string[] | undefined,
+    source: raw.source as 'instagram' | undefined,
+    sourceInstagramUsername: raw.sourceInstagramUsername as string | undefined,
+    extractionConfidence: raw.extractionConfidence as number | undefined,
+    incompleteFields: raw.incompleteFields as string[] | undefined,
+    possibleDuplicateOf: raw.possibleDuplicateOf as string | undefined,
+    detectedAt: raw.detectedAt as string | undefined,
+  };
+}
+
 export function toAdminPendingEvent(raw: Record<string, unknown>): AdminPendingEvent {
   const base = toAppEvent(raw);
   return {
@@ -176,6 +226,7 @@ export function toAdminPendingEvent(raw: Record<string, unknown>): AdminPendingE
     sourceMediaId: raw.sourceMediaId as string | undefined,
     detectedAt: raw.detectedAt as string | undefined,
     artist: (raw.artist as string | null | undefined) ?? undefined,
+    artists: raw.artists as string[] | undefined,
     incompleteFields: raw.incompleteFields as string[] | undefined,
     possibleDuplicateOf: raw.possibleDuplicateOf as string | undefined,
   };

@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import EventModel from '../models/event';
+import InstagramStoryModel from '../models/instagramStory';
 import MonitoredInstagramProfileModel from '../models/monitoredInstagramProfile';
 import VenueModel from '../models/venue';
-import { toAdminPendingEvent, toAppEvent } from '../mappers';
-import { AdminPendingEvent, AppEvent, MonitoredInstagramProfile } from '../types';
+import { toAdminPendingEventListItem, toAppEvent } from '../mappers';
+import { AdminPendingEvent, MonitoredInstagramProfile } from '../types';
 import { dayLabelForEvent, ensureEventScheduleFields, formatYmdInBahia } from '../utils/eventSchedule';
+import { buildVenueDocFromBody } from './adminVenues';
+import { writeInstagramError } from '../services/instagram/instagramApiErrors';
 
 const router = Router();
 
@@ -14,8 +17,10 @@ function normalizeUsername(raw: string): string {
 }
 
 router.get('/events/pending', async (_req, res) => {
-  const rows = await EventModel.find({ status: 'pending' }).sort({ detectedAt: -1, createdAt: -1 }).lean();
-  res.json(rows.map(r => toAdminPendingEvent(r as Record<string, unknown>)));
+  const rows = await EventModel.find({ status: 'pending' })
+    .sort({ detectedAt: -1, createdAt: -1 })
+    .lean();
+  res.json(rows.map(r => toAdminPendingEventListItem(r as Record<string, unknown>)));
 });
 
 router.get('/events/:id', async (req, res) => {
@@ -24,7 +29,18 @@ router.get('/events/:id', async (req, res) => {
   const row = raw as Record<string, unknown>;
   const status = String(row.status || '');
   if (status === 'pending') {
-    return res.json(toAdminPendingEvent(row));
+    const item = toAdminPendingEventListItem(row);
+    let extractedText = row.extractedText as string | undefined;
+    const mediaId = row.sourceMediaId as string | undefined;
+    if (!extractedText && mediaId) {
+      const story = await InstagramStoryModel.findOne({ instagramMediaId: mediaId }).lean();
+      extractedText = story?.ocrText as string | undefined;
+    }
+    return res.json({
+      ...item,
+      sourceMediaId: mediaId,
+      extractedText: extractedText ? extractedText.slice(0, 2000) : undefined,
+    });
   }
   res.json(toAppEvent(row));
 });
@@ -84,7 +100,7 @@ router.patch('/events/:id', async (req, res) => {
   patch.updatedAt = new Date().toISOString();
   await EventModel.findOneAndUpdate({ id: req.params.id }, patch, { upsert: true });
   const updated = await EventModel.findOne({ id: req.params.id }).lean();
-  res.json(toAdminPendingEvent(updated as Record<string, unknown>));
+  res.json(toAdminPendingEventListItem(updated as Record<string, unknown>));
 });
 
 router.post('/events/:id/approve', async (req, res) => {
@@ -116,35 +132,57 @@ router.get('/instagram-profiles', async (_req, res) => {
 });
 
 router.post('/instagram-profiles', async (req, res) => {
-  const username = normalizeUsername(String(req.body?.username || ''));
-  const venueId = String(req.body?.venueId || '').trim();
-  if (!username || !venueId) {
-    return res.status(400).json({ message: 'username e venueId são obrigatórios' });
+  try {
+    const username = normalizeUsername(String(req.body?.username || ''));
+    const venueId = String(req.body?.venueId || '').trim();
+    if (!username || !venueId) {
+      return res.status(400).json({ message: 'username e venueId são obrigatórios' });
+    }
+
+    const venueExists = await VenueModel.findOne({ id: venueId }).lean();
+    if (!venueExists) {
+      const inlineVenue = buildVenueDocFromBody(
+        (req.body?.venue || {}) as Parameters<typeof buildVenueDocFromBody>[0],
+        venueId
+      );
+      if (!inlineVenue) {
+        return res.status(400).json({
+          message:
+            'Estabelecimento não encontrado. Grave antes com POST /api/admin/venues ou envie venue { id, name, coordinates } no mesmo body.',
+          venueId,
+        });
+      }
+      await VenueModel.findOneAndUpdate({ id: venueId }, inlineVenue, { upsert: true, new: true });
+    }
+
+    const existing = await MonitoredInstagramProfileModel.findOne({ username }).lean();
+    if (existing) {
+      return res.status(409).json({ message: 'Perfil já monitorado', profile: existing });
+    }
+
+    const now = new Date().toISOString();
+    const profile: MonitoredInstagramProfile = {
+      id: uuidv4(),
+      username,
+      instagramUrl: req.body?.instagramUrl || `https://instagram.com/${username}`,
+      venueId,
+      active: req.body?.active !== false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await MonitoredInstagramProfileModel.create(profile);
+    res.status(201).json(profile);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const code = err && typeof err === 'object' && 'code' in err ? Number((err as { code: number }).code) : 0;
+    if (code === 11000) {
+      return res.status(409).json({ message: 'Perfil já monitorado (username duplicado)' });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[admin] POST /instagram-profiles', err);
+    res.status(500).json({ message: 'Erro ao cadastrar perfil Instagram', error: message });
   }
-
-  const venue = await VenueModel.findOne({ id: venueId }).lean();
-  if (!venue) {
-    return res.status(400).json({ message: 'Estabelecimento (venueId) não encontrado' });
-  }
-
-  const existing = await MonitoredInstagramProfileModel.findOne({ username }).lean();
-  if (existing) {
-    return res.status(409).json({ message: 'Perfil já monitorado', profile: existing });
-  }
-
-  const now = new Date().toISOString();
-  const profile: MonitoredInstagramProfile = {
-    id: uuidv4(),
-    username,
-    instagramUrl: req.body?.instagramUrl || `https://instagram.com/${username}`,
-    venueId,
-    active: req.body?.active !== false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await MonitoredInstagramProfileModel.create(profile);
-  res.status(201).json(profile);
 });
 
 router.post('/instagram/collect-once', async (_req, res) => {
@@ -156,10 +194,9 @@ router.post('/instagram/collect-once', async (_req, res) => {
     await collector.runCollectionCycle();
     res.json({ success: true, message: 'Coleta concluída — veja os logs no terminal do server' });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
     // eslint-disable-next-line no-console
-    console.error('[Instagram] Coleta manual falhou:', message);
-    res.status(500).json({ success: false, message });
+    console.error('[Instagram] Coleta manual falhou:', err);
+    writeInstagramError(res, err);
   }
 });
 

@@ -10,6 +10,7 @@
     "import:osm-venues": "ts-node --transpile-only src/scripts/importOsmVenues.ts",
     "sync:curated": "ts-node --transpile-only src/scripts/syncCuratedCatalog.ts",
     "collect:instagram": "ts-node --transpile-only src/scripts/runInstagramCollector.ts",
+    "register:instagram-profile": "ts-node --transpile-only src/scripts/registerMonitoredInstagramProfile.ts",
     "purge:events": "ts-node --transpile-only src/scripts/purgeLegacyEvents.ts"
   },
   "dependencies": {

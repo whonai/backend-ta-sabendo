@@ -13,13 +13,6 @@ import { withRetry } from '../../utils/retry';
 
 const MIN_CONFIDENCE_TO_CREATE = Number(process.env.EVENT_EXTRACTION_MIN_CONFIDENCE || '0.55');
 
-const DEFAULT_CREATOR = {
-  id: 'usr_instagram_pipeline',
-  name: 'Pipeline Instagram',
-  reputationLevel: 'Colaborador',
-  trustworthinessScore: 70,
-};
-
 export class StoryProcessingPipeline {
   constructor(
     private readonly ocr: OcrService,
@@ -141,9 +134,11 @@ export class StoryProcessingPipeline {
 
       const doc: Record<string, unknown> = {
         id: eventId,
+        status: 'pending',
         title: extraction.event.title || 'Evento (revisar)',
-        description: extraction.event.description || ocrResult.text.slice(0, 500),
-        category: extraction.event.category || 'espontaneo',
+        description: extraction.event.description || ocrResult.text.slice(0, 400),
+        category: extraction.event.category || 'shows',
+        venueId: story.venueId,
         venueName: String(venue?.name || extraction.event.venue || ''),
         address: String(venue?.address || ''),
         neighborhood: String(venue?.neighborhood || 'Centro'),
@@ -158,26 +153,15 @@ export class StoryProcessingPipeline {
         price: priceStr,
         imageUrl: story.mediaUrl || '',
         externalLink: extraction.event.sourceUrl || permalink,
-        interestedCount: 0,
-        goingCount: 0,
-        currentAttendees: 0,
-        status: 'pending',
-        origin: 'platform',
-        venueId: story.venueId,
-        confirmationsCount: 0,
-        disputesCount: 0,
-        evidenceCount: 0,
-        reliabilityScore: Math.round(extraction.confidence * 100),
-        createdBy: DEFAULT_CREATOR,
-        createdAt: nowIso,
-        updatedAt: nowIso,
         source: 'instagram',
         extractionConfidence: extraction.confidence,
-        extractedText: ocrResult.text,
         sourceInstagramUsername: story.username,
         sourceMediaId: mediaId,
         detectedAt: nowIso,
+        createdAt: nowIso,
+        updatedAt: nowIso,
         artist: extraction.event.artist,
+        artists: extraction.event.artists,
         incompleteFields: extraction.incompleteFields,
         possibleDuplicateOf: dup.isLikelyDuplicate ? dup.existingEventId : undefined,
       };

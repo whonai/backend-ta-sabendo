@@ -57,6 +57,7 @@ EventSchema.add({
   sourceMediaId: String,
   detectedAt: String,
   artist: String,
+  artists: [String],
   incompleteFields: [String],
   possibleDuplicateOf: String,
 });

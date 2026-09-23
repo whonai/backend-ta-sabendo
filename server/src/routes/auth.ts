@@ -31,19 +31,33 @@ router.get('/me', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) {
-    return res.status(400).json({ message: 'email e password são obrigatórios' });
-  }
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ message: 'email e password são obrigatórios' });
+    }
 
-  const doc = await UserModel.findOne({ email: String(email).toLowerCase() }).lean();
-  if (!doc || !verifyPassword(String(password), String(doc.passwordHash))) {
-    return res.status(401).json({ message: 'Credenciais inválidas' });
-  }
+    const doc = await UserModel.findOne({ email: String(email).toLowerCase() }).lean();
+    if (!doc || !verifyPassword(String(password), String(doc.passwordHash || ''))) {
+      return res.status(401).json({ message: 'Credenciais inválidas' });
+    }
 
-  const user = toAuthUser(doc as AuthUser & { passwordHash?: string });
-  const token = signToken(String(doc.id));
-  res.json({ user, token });
+    const user = toAuthUser(doc as AuthUser & { passwordHash?: string });
+    const token = signToken(String(doc.id));
+    res.json({ user, token });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] POST /login', err);
+    const isMongo =
+      message.includes('MongoServerSelectionError') ||
+      message.includes('connect ECONNREFUSED') ||
+      message.includes('timed out');
+    res.status(isMongo ? 503 : 500).json({
+      message: isMongo ? 'Banco de dados indisponível' : 'Erro ao fazer login',
+      error: message,
+    });
+  }
 });
 
 router.post('/register', async (req, res) => {

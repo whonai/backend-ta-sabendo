@@ -21,10 +21,14 @@ export class AuthService {
 
   async validateUser(email: string, pass: string) {
     const user = await this.userModel.findOne({ email }).lean()
-    if (!user) return null
-    const ok = await bcrypt.compare(pass, user.password)
-    if (!ok) return null
-    return user
+    if (!user?.password) return null
+    try {
+      const ok = await bcrypt.compare(pass, user.password)
+      if (!ok) return null
+      return user
+    } catch {
+      return null
+    }
   }
 
   async login(user: { id: string; email: string; role: string }) {

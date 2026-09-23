@@ -52,6 +52,25 @@ function pickAddress(tags: OsmTags): string {
   return 'Endereço não informado (OpenStreetMap)';
 }
 
+/** @username normalizado a partir de tags OSM (se existir). */
+export function instagramUsernameFromOsmTags(tags: OsmTags): string | null {
+  const raw =
+    tags['contact:instagram'] ||
+    tags['social:instagram'] ||
+    tags.instagram ||
+    tags['contact:social:instagram'] ||
+    '';
+  if (!raw.trim()) return null;
+  let s = raw.trim();
+  if (s.includes('instagram.com')) {
+    const m = s.match(/instagram\.com\/([A-Za-z0-9._]+)/i);
+    if (m) s = m[1];
+  }
+  s = s.replace(/^@/, '').split(/[/?#]/)[0].trim();
+  if (!/^[A-Za-z0-9._]{2,30}$/.test(s)) return null;
+  return s.toLowerCase();
+}
+
 function pickNeighborhood(tags: OsmTags): string {
   return (
     tags['addr:suburb'] ||

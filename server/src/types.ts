@@ -83,11 +83,41 @@ export type AdminInstagramEventFields = {
   sourceMediaId?: string;
   detectedAt?: string;
   artist?: string | null;
+  artists?: string[];
   incompleteFields?: string[];
   possibleDuplicateOf?: string;
 };
 
 export type AdminPendingEvent = AppEvent & AdminInstagramEventFields;
+
+/** Resposta enxuta de GET /admin/events/pending */
+export type AdminPendingEventListItem = {
+  id: string;
+  status: 'pending';
+  title: string;
+  description: string;
+  category: EventCategory;
+  venueId?: string;
+  venueName: string;
+  address: string;
+  neighborhood: string;
+  coordinates: Coordinates;
+  date: string;
+  dayLabel?: string;
+  startTime: string;
+  endTime?: string;
+  price: string;
+  imageUrl: string;
+  externalLink?: string;
+  artist?: string;
+  artists?: string[];
+  source?: 'instagram';
+  sourceInstagramUsername?: string;
+  extractionConfidence?: number;
+  incompleteFields?: string[];
+  possibleDuplicateOf?: string;
+  detectedAt?: string;
+};
 
 export type MonitoredInstagramProfile = {
   id: string;
