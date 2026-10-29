@@ -17,6 +17,29 @@ export type InstagramDiscoverResult = {
   message?: string;
 };
 
+export type InstagramDiscoverOutcome =
+  | 'no_match'
+  | 'candidates'
+  | 'known_username'
+  | 'already_monitored';
+
+async function markDiscoverAttempt(
+  venueId: string,
+  outcome: InstagramDiscoverOutcome,
+  message?: string
+): Promise<void> {
+  await VenueModel.updateOne(
+    { id: venueId },
+    {
+      $set: {
+        instagramDiscoverSearchedAt: new Date().toISOString(),
+        instagramDiscoverOutcome: outcome,
+        instagramDiscoverMessage: message || '',
+      },
+    }
+  );
+}
+
 function pickSearchQuery(name: string, neighborhood?: string): string {
   const base = name.replace(/\s+/g, ' ').trim();
   if (neighborhood && !base.toLowerCase().includes(neighborhood.toLowerCase().slice(0, 8))) {
@@ -37,35 +60,41 @@ export async function discoverInstagramForVenue(venueId: string): Promise<Instag
 
   const monitored = await MonitoredInstagramProfileModel.findOne({ venueId }).lean();
   if (monitored) {
+    const message = 'Perfil Instagram já vinculado a este estabelecimento.';
+    await markDiscoverAttempt(venueId, 'already_monitored', message);
     return {
       venueId,
       venueName,
       source: 'already_monitored',
       username: String(monitored.username),
       candidates: [],
-      message: 'Perfil Instagram já vinculado a este estabelecimento.',
+      message,
     };
   }
 
   if (storedIg) {
+    const message = 'Username já conhecido no cadastro do venue (ex.: tag OSM).';
+    await markDiscoverAttempt(venueId, 'known_username', message);
     return {
       venueId,
       venueName,
       source: v.instagramSource === 'osm' ? 'osm' : 'venue_record',
       username: storedIg,
       candidates: [{ username: storedIg, fullName: venueName }],
-      message: 'Username já conhecido no cadastro do venue (ex.: tag OSM).',
+      message,
     };
   }
 
   if ((process.env.INSTAGRAM_ADAPTER || 'instagrapi').toLowerCase() === 'mock') {
+    const message = 'INSTAGRAM_ADAPTER=mock — configure sessão real para buscar @.';
+    await markDiscoverAttempt(venueId, 'no_match', message);
     return {
       venueId,
       venueName,
       source: 'none',
       username: null,
       candidates: [],
-      message: 'INSTAGRAM_ADAPTER=mock — configure sessão real para buscar @.',
+      message,
     };
   }
 
@@ -88,6 +117,11 @@ export async function discoverInstagramForVenue(venueId: string): Promise<Instag
   }
 
   const best = candidates[0]?.username || null;
+  const message = best
+    ? 'Sugestão automática — confirme antes de monitorar.'
+    : 'Nenhum perfil encontrado na busca.';
+
+  await markDiscoverAttempt(venueId, best ? 'candidates' : 'no_match', message);
 
   return {
     venueId,
@@ -95,9 +129,7 @@ export async function discoverInstagramForVenue(venueId: string): Promise<Instag
     source: best ? 'instagram_search' : 'none',
     username: best,
     candidates,
-    message: best
-      ? 'Sugestão automática — confirme antes de monitorar.'
-      : 'Nenhum perfil encontrado na busca.',
+    message,
   };
 }
 

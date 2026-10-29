@@ -9,6 +9,7 @@ import {
 } from '../seedData';
 import { toAppEvent } from '../mappers';
 import { isEventPast } from '../utils/eventSchedule';
+import { isEphemeralEvent } from '../utils/ephemeralEvents';
 import { AppEvent } from '../types';
 import { realignAllEventEngagement } from './eventEngagement';
 
@@ -60,6 +61,7 @@ export async function closeStaleNonCuratedPastEvents(now = new Date()): Promise<
   for (const raw of all) {
     const event = toAppEvent(raw as Record<string, unknown>) as AppEvent;
     if (event.status === 'closed') continue;
+    if (isEphemeralEvent(event)) continue;
     if (isEventPast(event, now)) {
       await EventModel.updateOne({ id: event.id }, { status: 'closed', currentAttendees: 0 });
       closed += 1;

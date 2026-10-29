@@ -17,14 +17,25 @@ import {
 import { hashPassword } from './auth/token';
 import { isLegacyEventDoc } from './mappers';
 import { closeStaleNonCuratedPastEvents, syncCuratedCatalog } from './services/curatedCatalogSync';
+import { purgeExpiredEphemeralEvents } from './services/ephemeralEventPurge';
 import { realignAllEventEngagement } from './services/eventEngagement';
 
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb://127.0.0.1:27017/ta_rolando';
+/** Dev local: não depende de IP no MongoDB Atlas (evita queda diária do back). */
+const LOCAL_MONGODB_URI = 'mongodb://127.0.0.1:27017/ta_rolando';
+
+function resolveMongodbUri(): string {
+  const preferLocal =
+    String(process.env.DEV_USE_LOCAL_MONGODB || 'true').toLowerCase() === 'true';
+  if (preferLocal) {
+    return LOCAL_MONGODB_URI;
+  }
+  return process.env.MONGODB_URI || LOCAL_MONGODB_URI;
+}
+
+const MONGODB_URI = resolveMongodbUri();
 
 async function needsReseed(): Promise<boolean> {
   const sample = await EventModel.findOne().lean();
@@ -98,6 +109,8 @@ export async function connectDb() {
   } else {
     await realignAllEventEngagement();
   }
+
+  await purgeExpiredEphemeralEvents(new Date());
 
   await seedUsersIfEmpty();
 

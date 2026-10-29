@@ -4,13 +4,17 @@ import UrbanReportModel from '../models/urbanReport';
 import { buildCityPulse } from '../services/pulseService';
 import { toAppEvent, toUrbanReport } from '../mappers';
 import { PUBLIC_EVENT_STATUS_FILTER } from '../utils/publicEvents';
+import { filterEventsForPublicListing } from '../utils/ephemeralEvents';
 
 export async function pulseHandler(_req: Request, res: Response) {
   const [eventsRaw, reportsRaw] = await Promise.all([
     EventModel.find(PUBLIC_EVENT_STATUS_FILTER).lean(),
     UrbanReportModel.find().lean(),
   ]);
-  const events = eventsRaw.map(e => toAppEvent(e as Record<string, unknown>));
+  const events = filterEventsForPublicListing(
+    eventsRaw.map(e => toAppEvent(e as Record<string, unknown>)),
+    new Date()
+  );
   const reports = reportsRaw.map(r => toUrbanReport(r as Record<string, unknown>));
   res.json(buildCityPulse(events, reports, new Date()));
 }

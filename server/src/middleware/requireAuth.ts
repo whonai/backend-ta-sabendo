@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { bearerUserId } from '../routes/auth';
+import { bearerUserId } from '../auth/bearer';
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const userId = bearerUserId(req);

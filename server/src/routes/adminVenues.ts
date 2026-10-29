@@ -2,6 +2,7 @@ import { Router } from 'express';
 import VenueModel from '../models/venue';
 import { toVenue } from '../mappers';
 import { defaultOsmBbox, importOsmVenues } from '../services/osm/osmVenueImportService';
+import { getAdminVenueInstagramQueues } from '../services/osm/adminVenueDiscoveryService';
 const router = Router();
 
 type VenueUpsertBody = {
@@ -47,6 +48,19 @@ export function buildVenueDocFromBody(body: VenueUpsertBody, fallbackId?: string
     source: String(body.source || 'admin'),
   };
 }
+
+/**
+ * Fila IG: `pending` = OSM elegível sem perfil monitorado; `monitored` = já cadastrados.
+ * Exclui fast food, redes e comida sem foco em bar/evento.
+ */
+router.get('/venues/instagram-queue', async (_req, res) => {
+  try {
+    res.json(await getAdminVenueInstagramQueues());
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ message: 'Erro ao listar fila de estabelecimentos', error: message });
+  }
+});
 
 /** Cria ou atualiza estabelecimento (id pode ser gerado no front, ex. venue_1790117042887). */
 router.post('/venues', async (req, res) => {

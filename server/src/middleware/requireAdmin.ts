@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import UserModel from '../models/user';
-import { bearerUserId } from '../routes/auth';
+import { bearerUserId } from '../auth/bearer';
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

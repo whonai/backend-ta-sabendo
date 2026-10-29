@@ -13,6 +13,13 @@ import {
   toggleParticipation,
 } from '../services/eventEngagement';
 import { isPublicEventStatus, PUBLIC_EVENT_STATUS_FILTER } from '../utils/publicEvents';
+import {
+  filterEventsForPublicListing,
+  isEphemeralEvent,
+  sanitizeEventAttendeesForApi,
+  shouldHideEphemeralFromPublicLists,
+} from '../utils/ephemeralEvents';
+import { isInLiveConfirmationWindow } from '../utils/eventSchedule';
 
 const router = Router();
 
@@ -44,14 +51,27 @@ async function mapEventList(rows: Record<string, unknown>[], userId: string | nu
   await Promise.all(ids.map(id => syncEventEngagementToDocument(id)));
   const refreshed = await EventModel.find({ id: { $in: ids } }).lean();
   const events = refreshed.map(r => toAppEvent(r as Record<string, unknown>));
-  if (!userId) return events;
-  return Promise.all(
-    events.map(async ev => {
-      const flags = await getUserEngagementFlags(ev.id, userId);
-      return applyUserFlagsToEvent(ev, flags);
-    })
-  );
+  const mapped = !userId
+    ? events
+    : await Promise.all(
+        events.map(async ev => {
+          const flags = await getUserEngagementFlags(ev.id, userId);
+          return applyUserFlagsToEvent(ev, flags);
+        })
+      );
+  return filterEventsForPublicListing(mapped);
 }
+
+router.get('/live-confirmation-candidates', requireAuth, async (req, res) => {
+  const now = new Date();
+  const rows = await EventModel.find(PUBLIC_EVENT_STATUS_FILTER).lean();
+  const userId = getRequestUserId(req);
+  const events = await mapEventList(rows as Record<string, unknown>[], userId);
+  const candidates = events.filter(
+    e => isEphemeralEvent(e) && isInLiveConfirmationWindow(e, now)
+  );
+  res.json(candidates.map(sanitizeEventAttendeesForApi));
+});
 
 router.get('/', async (req, res) => {
   const { category, date, neighborhood } = req.query as Record<string, string | undefined>;
@@ -74,7 +94,10 @@ router.get('/:id', async (req, res) => {
   }
   const ev = await findEventMapped(req.params.id, userId);
   if (!ev) return res.status(404).json({ message: 'Evento não encontrado' });
-  res.json(ev);
+  if (shouldHideEphemeralFromPublicLists(ev)) {
+    return res.status(404).json({ message: 'Evento não encontrado' });
+  }
+  res.json(sanitizeEventAttendeesForApi(ev));
 });
 
 router.post('/', async (req, res) => {

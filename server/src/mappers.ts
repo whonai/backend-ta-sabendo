@@ -64,14 +64,15 @@ const LEGACY_ORIGIN: Record<string, EventOrigin> = {
 
 const URBAN_TYPES = new Set<string>([
   'pothole', 'lighting', 'flooding', 'trash', 'traffic_light', 'sidewalk',
-  'traffic', 'construction', 'other',
+  'traffic', 'traffic_enforcement', 'construction', 'other',
 ]);
 
 const LEGACY_URBAN_TYPE: Record<string, UrbanIssueType> = {
   flood: 'flooding',
   traffic_jam: 'traffic',
   accident: 'traffic',
-  police_blitz: 'traffic',
+  police_blitz: 'traffic_enforcement',
+  blitz: 'traffic_enforcement',
   hazard: 'other',
   tree_down: 'other',
 };

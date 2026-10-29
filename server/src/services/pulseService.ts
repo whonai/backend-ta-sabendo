@@ -35,8 +35,8 @@ function dominantHotspotType(events: AppEvent[]): string {
 }
 
 export function buildCityPulse(events: AppEvent[], reports: UrbanReport[], now = new Date()): CityPulse {
+  const liveEvents = events.filter(e => isEventLiveNow(e, now));
   const relevantEvents = events.filter(e => isEventRelevantForPulse(e, now));
-  const liveEvents = relevantEvents.filter(e => isEventLiveNow(e, now));
   const floods = reports.filter(r => r.type === 'flooding' && r.status !== 'closed');
 
   const zoneScores: Record<
@@ -56,7 +56,7 @@ export function buildCityPulse(events: AppEvent[], reports: UrbanReport[], now =
       };
     }
     zoneScores[key].events.push(e);
-    zoneScores[key].attendees += e.currentAttendees + e.goingCount;
+    zoneScores[key].attendees += (e.currentAttendees ?? 0) + e.goingCount;
     zoneScores[key].score += e.reliabilityScore;
   }
 
@@ -105,7 +105,8 @@ export function buildCityPulse(events: AppEvent[], reports: UrbanReport[], now =
   }
 
   return {
-    activeEventsCount: relevantEvents.length,
+    /** Eventos ao vivo agora (janela date+startTime/endTime, America/Bahia). */
+    activeEventsCount: liveEvents.length,
     bustlingZonesCount: bustlingZonesCount || (hotspots.length > 0 ? hotspots.length : 0),
     confirmedFloodsCount: floods.length,
     cityMood,
