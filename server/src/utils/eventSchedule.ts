@@ -168,3 +168,28 @@ export function isEventRelevantForPulse(event: AppEvent, now = new Date()): bool
   if (isEventPast(event, now)) return false;
   return isEventUpcoming(event, now, 14);
 }
+
+/** Janela pós-início para confirmação ao vivo (“tá rolando?”) — 3h em America/Bahia. */
+export const LIVE_CONFIRMATION_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+export function eventStartMs(event: Pick<AppEvent, 'date' | 'startTime' | 'endTime'>): number {
+  return eventWindowMs(event).startMs;
+}
+
+export function liveConfirmationWindowEndMs(
+  event: Pick<AppEvent, 'date' | 'startTime' | 'endTime'>
+): number {
+  return eventStartMs(event) + LIVE_CONFIRMATION_WINDOW_MS;
+}
+
+export function isInLiveConfirmationWindow(event: AppEvent, now = new Date()): boolean {
+  if (event.status === 'closed') return false;
+  const start = eventStartMs(event);
+  const end = start + LIVE_CONFIRMATION_WINDOW_MS;
+  const t = now.getTime();
+  return t >= start && t < end;
+}
+
+export function isPastLiveConfirmationWindow(event: AppEvent, now = new Date()): boolean {
+  return now.getTime() >= liveConfirmationWindowEndMs(event);
+}

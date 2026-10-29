@@ -52,7 +52,8 @@ export type AppEvent = {
   externalLink?: string;
   interestedCount: number;
   goingCount: number;
-  currentAttendees: number;
+  /** Omitido na API quando não há check-ins reais. */
+  currentAttendees?: number;
   status: EventStatus;
   origin: EventOrigin;
   venueId?: string;

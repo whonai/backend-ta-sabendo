@@ -11,6 +11,7 @@ import adminRouter from './routes/admin';
 import debugRouter from './routes/debug';
 import { connectDb } from './db';
 import { startInstagramCollectorScheduler } from './services/instagram/instagramScheduler';
+import { startEphemeralEventPurgeScheduler } from './services/ephemeralEventScheduler';
 import { requireAdmin } from './middleware/requireAdmin';
 import { getPipelineStatus } from './services/pipeline/pipelineStatus';
 import { discoverInstagramForVenue } from './services/instagram/instagramDiscoverService';
@@ -92,6 +93,7 @@ app.use(
 connectDb()
   .then(() => {
     startInstagramCollectorScheduler();
+    startEphemeralEventPurgeScheduler();
     app.listen(PORT, () => {
       // eslint-disable-next-line no-console
       console.log(`Tá Rolando Feira backend running on port ${PORT} (apiBuild pipeline-admin-v2)`);
@@ -100,5 +102,12 @@ connectDb()
   .catch(err => {
     // eslint-disable-next-line no-console
     console.error('Erro conectando ao MongoDB', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('whitelist') || msg.includes('MongoServerSelectionError') || msg.includes('ECONNREFUSED')) {
+      // eslint-disable-next-line no-console
+      console.error(
+        '\n[Dica] Na raiz do repo: npm run db:up  (Docker Mongo) e DEV_USE_LOCAL_MONGODB=true em server/.env\n'
+      );
+    }
     process.exit(1);
   });

@@ -4,7 +4,9 @@ const UserSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, index: true, unique: true },
     email: { type: String, required: true, unique: true },
-    passwordHash: { type: String, required: true },
+    /** Ausente para contas criadas somente via Google. */
+    passwordHash: { type: String },
+    googleId: { type: String, index: true, unique: true, sparse: true },
     name: String,
     avatarUrl: String,
     isAdmin: Boolean,
@@ -12,7 +14,7 @@ const UserSchema = new mongoose.Schema(
     reputationLevel: String,
     trustworthinessScore: Number,
   },
-  { strict: false }
+  { strict: false, timestamps: true }
 );
 
 const UserModel = mongoose.model('User', UserSchema);
